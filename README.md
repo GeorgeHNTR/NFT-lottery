@@ -1,0 +1,2 @@
+# NFT-lottery
+Nexo task
