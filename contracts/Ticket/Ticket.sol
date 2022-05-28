@@ -3,12 +3,12 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
 
-import "../utils/IERC721PausableInitializable.sol";
+import "../utils/IERC721TimerInitializable.sol";
 
 error InvalidInput();
 error InvalidAmount();
 
-contract Ticket is IERC721PausableInitializable, ERC721PausableUpgradeable {
+contract Ticket is IERC721TimerInitializable, ERC721PausableUpgradeable {
     uint256 public start;
     uint256 public end;
 

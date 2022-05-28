@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IERC721PausableInitializable {
+interface IERC721TimerInitializable {
     /**
      * @dev Do not forget to add the "initializer" custom modifer
      */
