@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
 
-import "./utils/ERC721Initializable.sol";
+import "../utils/ERC721Initializable.sol";
 
 error InvalidInput();
 
