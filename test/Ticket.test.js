@@ -34,8 +34,8 @@ describe('Ticket', () => {
                 expect(await this.Ticket.end()).to.equal(END_TIME);
             });
 
-            it('should not be paused', async function () {
-                expect(await this.Ticket.paused()).to.be.false;
+            it('should be paused', async function () {
+                expect(await this.Ticket.paused()).to.be.true;
             });
         });
 
@@ -65,6 +65,7 @@ describe('Ticket', () => {
 
     describe("Buying/minting tickets", async function () {
         beforeEach(async function () {
+            await this.Ticket.initialize(NAME, SYMBOL, 0, END_TIME);
             await this.Ticket.buyTicket({ value: await this.Ticket.TICKET_PRICE() });
         });
 
