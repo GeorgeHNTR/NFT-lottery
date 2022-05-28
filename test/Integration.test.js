@@ -1,10 +1,9 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe('Integration', async function () {
-    let NAME = "test-name";
-    let SYMBOL = "test-symbol";
+const { NAME, SYMBOL, START_TIME, END_TIME } = require("./utils/utils");
 
+describe('Integration', async function () {
     beforeEach(async function () {
         [deployer, randomAcc] = await ethers.getSigners();
 
@@ -13,7 +12,7 @@ describe('Integration', async function () {
         this.TicketBeacon = await (await ethers.getContractFactory('TicketBeacon')).deploy(this.TicketImplementation.address);
         this.TicketFactory = await (await ethers.getContractFactory('TicketFactory')).deploy(this.TicketBeacon.address);
 
-        await this.TicketFactory.deployTicketProxy(NAME, SYMBOL);
+        await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, (START_TIME).toString(), (END_TIME).toString());
         const deployedTicketProxies = await this.TicketFactory.deployedTicketProxies();
         const ticketProxyAddress = deployedTicketProxies[deployedTicketProxies.length - 1];
 

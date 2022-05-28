@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-import "../utils/ERC721Initializable.sol";
-
 contract TicketProxy is BeaconProxy {
     constructor(address _beacon) payable BeaconProxy(_beacon, "") {}
 

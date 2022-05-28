@@ -5,5 +5,10 @@ interface IERC721PausableInitializable {
     /**
      * @dev Do not forget to add the "initializer" custom modifer
      */
-    function initialize(string memory name_, string memory symbol_) external;
+    function initialize(
+        string memory name_,
+        string memory symbol_,
+        uint256 _start,
+        uint256 _end
+    ) external;
 }

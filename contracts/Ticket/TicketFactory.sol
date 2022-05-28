@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./TicketBeacon.sol";
 import "./TicketProxy.sol";
+import "../utils/IERC721PausableInitializable.sol";
 
 contract TicketFactory {
     address public immutable BEACON_ADDRESS;
@@ -12,11 +13,19 @@ contract TicketFactory {
         BEACON_ADDRESS = _beaconAddress;
     }
 
-    function deployTicketProxy(string memory _name, string memory _symbol)
-        external
-    {
+    function deployTicketProxy(
+        string memory _name,
+        string memory _symbol,
+        uint256 _start,
+        uint256 _end
+    ) external {
         TicketProxy newTicketProxy = new TicketProxy(BEACON_ADDRESS);
-        ERC721Initializable(address(newTicketProxy)).initialize(_name, _symbol);
+        IERC721PausableInitializable(address(newTicketProxy)).initialize(
+            _name,
+            _symbol,
+            _start,
+            _end
+        );
         _deployedTicketProxies.push(address(newTicketProxy));
     }
 
