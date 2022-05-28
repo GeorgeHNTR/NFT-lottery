@@ -62,4 +62,29 @@ describe('Ticket', () => {
             });
         });
     });
+
+    describe("Buying/minting tickets", async function () {
+        beforeEach(async function () {
+            await this.Ticket.buyTicket({ value: await this.Ticket.TICKET_PRICE() });
+        });
+
+        it('should mint a new token to msg.sender', async function () {
+            expect(await this.Ticket.balanceOf(deployer.address)).to.equal(1);
+        });
+
+        it('should save the token with correct id', async function () {
+            expect(await this.Ticket.ownerOf(0)).to.equal(deployer.address);
+        });
+
+        it('should increment id', async function () {
+            const currentId = Number(await this.Ticket.id());
+            await this.Ticket.buyTicket({ value: await this.Ticket.TICKET_PRICE() });
+            expect(await this.Ticket.id()).to.equal(currentId + 1);
+        });
+
+        it('should cost exactly 0.001 ETH', async function () {
+            await expect(this.Ticket.buyTicket({ value: (await this.Ticket.TICKET_PRICE() - 1) })).to.be.revertedWith('InvalidAmount()');
+            await expect(this.Ticket.buyTicket({ value: (await this.Ticket.TICKET_PRICE() + 1) })).to.be.revertedWith('InvalidAmount()');
+        });
+    });
 });

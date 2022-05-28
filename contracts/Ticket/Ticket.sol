@@ -6,11 +6,16 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721Pausab
 import "../utils/IERC721PausableInitializable.sol";
 
 error InvalidInput();
+error InvalidAmount();
 
 contract Ticket is IERC721PausableInitializable, ERC721PausableUpgradeable {
     uint256 public start;
     uint256 public end;
-    uint256 public constant MINIMAL_DURATION = 2 hours;
+
+    uint16 public constant MINIMAL_DURATION = 2 hours;
+    uint64 public constant TICKET_PRICE = 0.001 ether;
+
+    uint256 public id = 0;
 
     function initialize(
         string memory _name,
@@ -29,5 +34,11 @@ contract Ticket is IERC721PausableInitializable, ERC721PausableUpgradeable {
 
         start = _start;
         end = _end;
+    }
+
+    function buyTicket() external payable whenNotPaused {
+        if (msg.value != TICKET_PRICE) revert InvalidAmount();
+        _mint(msg.sender, id);
+        id++;
     }
 }
