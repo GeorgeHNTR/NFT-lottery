@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-const { NAME, SYMBOL, START_TIME, END_TIME } = require("./utils/utils");
+const { NAME, SYMBOL, START_TIME, END_TIME, PRICE } = require("./utils/utils");
 
 describe('TicketFactory', () => {
 
@@ -16,7 +16,7 @@ describe('TicketFactory', () => {
 
     describe("Proxy deployment", async function () {
         it('should save newly created proxy addresses', async function () {
-            await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_TIME, END_TIME);
+            await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_TIME, END_TIME, PRICE);
             expect(await this.TicketFactory.deployedTicketProxies()).to.have.lengthOf(1);
         });
     });

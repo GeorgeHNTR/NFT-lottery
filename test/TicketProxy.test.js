@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-const { NAME, SYMBOL, START_TIME, END_TIME } = require("./utils/utils");
+const { NAME, SYMBOL, START_TIME, END_TIME, PRICE } = require("./utils/utils");
 
 describe('TicketProxy', () => {
     beforeEach(async function () {
@@ -15,7 +15,7 @@ describe('TicketProxy', () => {
 
     describe("Upon deployment", async function () {
         it('should save correct beacon address', async function () {
-            await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_TIME, END_TIME);
+            await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_TIME, END_TIME, PRICE);
             const deployedTicketProxyAddress = (await this.TicketFactory.deployedTicketProxies())[0];
             const deployedTicketProxy = await ethers.getContractAt('TicketProxy', deployedTicketProxyAddress);
             expect(await deployedTicketProxy.beacon()).to.equal(this.TicketBeacon.address);
