@@ -5,16 +5,19 @@ import "./TicketBeacon.sol";
 import "./TicketProxy.sol";
 
 contract TicketFactory {
-    address immutable BEACON_ADDRESS;
+    address public immutable BEACON_ADDRESS;
     address[] _deployedTicketProxies;
 
     constructor(address _beaconAddress) {
         BEACON_ADDRESS = _beaconAddress;
     }
 
-    function deployTicketProxy() external {
-        address newTicketProxy = address(new TicketProxy(BEACON_ADDRESS, ""));
-        _deployedTicketProxies.push(newTicketProxy);
+    function deployTicketProxy(string memory _name, string memory _symbol)
+        external
+    {
+        TicketProxy newTicketProxy = new TicketProxy(BEACON_ADDRESS);
+        ERC721Initializable(address(newTicketProxy)).initialize(_name, _symbol);
+        _deployedTicketProxies.push(address(newTicketProxy));
     }
 
     function deployedTicketProxies() public view returns (address[] memory) {
