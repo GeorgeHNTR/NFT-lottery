@@ -14,8 +14,8 @@ contract TicketFactory {
     }
 
     function deployTicketProxy(
-        string memory _name,
-        string memory _symbol,
+        string calldata _name,
+        string calldata _symbol,
         uint256 _start,
         uint256 _end
     ) external {
