@@ -19,5 +19,10 @@ describe('TicketFactory', () => {
             await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_TIME, END_TIME, PRICE);
             expect(await this.TicketFactory.deployedTicketProxies()).to.have.lengthOf(1);
         });
+
+        it('should revert if last ticket has not finished', async function () {
+            await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_TIME, END_TIME, PRICE);
+            await expect(this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_TIME, END_TIME, PRICE)).to.be.revertedWith("OnlyOneTicketAtTime()");
+        });
     });
 });

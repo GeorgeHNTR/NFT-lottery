@@ -5,6 +5,8 @@ import "./TicketBeacon.sol";
 import "./TicketProxy.sol";
 import "../interfaces/ITicket.sol";
 
+error OnlyOneTicketAtTime();
+
 contract TicketFactory {
     address public immutable BEACON_ADDRESS;
     address[] _deployedTicketProxies;
@@ -20,6 +22,12 @@ contract TicketFactory {
         uint256 _end,
         uint256 _ticketPrice
     ) external {
+        address _latestTicketProxy = latestTicketProxy();
+        if (
+            _latestTicketProxy != address(0x0) &&
+            !ITicket(_latestTicketProxy).finished()
+        ) revert OnlyOneTicketAtTime();
+
         TicketProxy newTicketProxy = new TicketProxy(BEACON_ADDRESS);
         ITicket(address(newTicketProxy)).initialize(
             _name,
@@ -33,5 +41,18 @@ contract TicketFactory {
 
     function deployedTicketProxies() public view returns (address[] memory) {
         return _deployedTicketProxies;
+    }
+
+    function latestTicketProxy()
+        public
+        view
+        returns (address _latestTicketProxy)
+    {
+        address[] memory deployedTicketProxies_ = _deployedTicketProxies;
+        deployedTicketProxies_.length == 0
+            ? _latestTicketProxy = address(0x0)
+            : _latestTicketProxy = deployedTicketProxies_[
+            deployedTicketProxies_.length - 1
+        ];
     }
 }

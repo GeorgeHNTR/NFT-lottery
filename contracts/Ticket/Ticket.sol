@@ -62,4 +62,8 @@ contract Ticket is ITicket, ERC721Upgradeable {
     function paused() public view override returns (bool) {
         return block.timestamp < START || block.timestamp > END;
     }
+
+    function finished() public view override returns (bool) {
+        return block.timestamp > END;
+    }
 }

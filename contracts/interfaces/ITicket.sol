@@ -16,4 +16,6 @@ interface ITicket {
     function buyTicket() external payable;
 
     function paused() external view returns (bool);
+
+    function finished() external view returns (bool);
 }
