@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe.only('Integration', async function () {
+describe('Integration', async function () {
     let NAME = "test-name";
     let SYMBOL = "test-symbol";
 
