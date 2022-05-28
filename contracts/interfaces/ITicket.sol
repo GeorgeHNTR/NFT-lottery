@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IERC721TimerPricedInitializable {
+interface ITicket {
     /**
      * @dev Do not forget to add the "initializer" custom modifer
      */
@@ -12,4 +12,8 @@ interface IERC721TimerPricedInitializable {
         uint256 _end,
         uint256 _price
     ) external;
+
+    function buyTicket() external payable;
+
+    function paused() external view returns (bool);
 }

@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./TicketBeacon.sol";
 import "./TicketProxy.sol";
-import "../utils/IERC721TimerPricedInitializable.sol";
+import "../interfaces/ITicket.sol";
 
 contract TicketFactory {
     address public immutable BEACON_ADDRESS;
@@ -21,7 +21,7 @@ contract TicketFactory {
         uint256 _ticketPrice
     ) external {
         TicketProxy newTicketProxy = new TicketProxy(BEACON_ADDRESS);
-        IERC721TimerPricedInitializable(address(newTicketProxy)).initialize(
+        ITicket(address(newTicketProxy)).initialize(
             _name,
             _symbol,
             _start,

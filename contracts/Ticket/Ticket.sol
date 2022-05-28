@@ -3,18 +3,18 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 
-import "../utils/IERC721TimerPricedInitializable.sol";
+import "../interfaces/ITicket.sol";
 
 error InvalidInput();
 error InvalidAmount();
 error Paused();
 error NotPausedYet();
 
-contract Ticket is IERC721TimerPricedInitializable, ERC721Upgradeable {
+contract Ticket is ITicket, ERC721Upgradeable {
     uint256 public START;
     uint256 public END;
     uint256 public TICKET_PRICE;
-    
+
     uint16 public constant MINIMAL_DURATION = 2 hours;
     uint128 public id = 0;
 
@@ -53,13 +53,13 @@ contract Ticket is IERC721TimerPricedInitializable, ERC721Upgradeable {
         TICKET_PRICE = _price;
     }
 
-    function buyTicket() external payable whenNotPaused {
+    function buyTicket() external payable override whenNotPaused {
         if (msg.value != TICKET_PRICE) revert InvalidAmount();
         _mint(msg.sender, id);
         id++;
     }
 
-    function paused() public view returns (bool) {
+    function paused() public view override returns (bool) {
         return block.timestamp < START || block.timestamp > END;
     }
 }
