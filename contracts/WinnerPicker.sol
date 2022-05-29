@@ -42,10 +42,6 @@ contract WinnerPicker is VRFConsumerBase, Ownable {
         public
         returns (bytes32 requestId)
     {
-        if (LINK.balanceOf(address(this)) < fee) {
-            bool success = LINK.transferFrom(msg.sender, _vrfCoordinator, fee);
-            if (!success) revert InsufficientFunds();
-        }
         requestId = requestRandomness(_keyHash, fee);
         requests[requestId] = msg.sender;
         callbacks[requestId] = callbackSignature;
