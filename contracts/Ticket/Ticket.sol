@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 
 import "../interfaces/ITicket.sol";
 
@@ -10,7 +10,7 @@ error InvalidAmount();
 error Paused();
 error NotPausedYet();
 
-contract Ticket is ITicket, ERC721Upgradeable {
+contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     uint256 public START;
     uint256 public END;
     uint256 public TICKET_PRICE;
@@ -51,6 +51,18 @@ contract Ticket is ITicket, ERC721Upgradeable {
     function buyTicket() external payable override whenNotPaused {
         if (msg.value != TICKET_PRICE) revert InvalidAmount();
         _mint(msg.sender, id);
+        id++;
+    }
+
+    function buyTicketWithURI(string memory _tokenUri)
+        external
+        payable
+        override
+        whenNotPaused
+    {
+        if (msg.value != TICKET_PRICE) revert InvalidAmount();
+        _mint(msg.sender, id);
+        _setTokenURI(id, _tokenUri);
         id++;
     }
 

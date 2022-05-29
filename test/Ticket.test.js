@@ -72,24 +72,34 @@ describe('Ticket', () => {
             await this.Ticket.initialize(NAME, SYMBOL, CURRENT_BLOCK + 1, END_BLOCK, PRICE);
             await this.Ticket.buyTicket({ value: await this.Ticket.TICKET_PRICE() });
         });
+        describe("Default", async function () {
+            it('should mint a new token to msg.sender', async function () {
+                expect(await this.Ticket.balanceOf(deployer.address)).to.equal(1);
+            });
 
-        it('should mint a new token to msg.sender', async function () {
-            expect(await this.Ticket.balanceOf(deployer.address)).to.equal(1);
+            it('should save the token with correct id', async function () {
+                expect(await this.Ticket.ownerOf(0)).to.equal(deployer.address);
+            });
+
+            it('should increment id', async function () {
+                const currentId = Number(await this.Ticket.id());
+                await this.Ticket.buyTicket({ value: await this.Ticket.TICKET_PRICE() });
+                expect(await this.Ticket.id()).to.equal(currentId + 1);
+            });
+
+            it('should cost the price amount', async function () {
+                await expect(this.Ticket.buyTicket({ value: (await this.Ticket.TICKET_PRICE() - 1) })).to.be.revertedWith('InvalidAmount()');
+                await expect(this.Ticket.buyTicket({ value: (await this.Ticket.TICKET_PRICE() + 1) })).to.be.revertedWith('InvalidAmount()');
+            });
         });
 
-        it('should save the token with correct id', async function () {
-            expect(await this.Ticket.ownerOf(0)).to.equal(deployer.address);
+        describe("With token URI", async function () {
+            it('should set token URI', async function () {
+                const ticketID = Number(await this.Ticket.id());
+                await this.Ticket.buyTicketWithURI("test-tokenURI", { value: await this.Ticket.TICKET_PRICE() });
+                expect(await this.Ticket.tokenURI(ticketID)).to.equal("test-tokenURI");
+            });
         });
 
-        it('should increment id', async function () {
-            const currentId = Number(await this.Ticket.id());
-            await this.Ticket.buyTicket({ value: await this.Ticket.TICKET_PRICE() });
-            expect(await this.Ticket.id()).to.equal(currentId + 1);
-        });
-
-        it('should cost the price amount', async function () {
-            await expect(this.Ticket.buyTicket({ value: (await this.Ticket.TICKET_PRICE() - 1) })).to.be.revertedWith('InvalidAmount()');
-            await expect(this.Ticket.buyTicket({ value: (await this.Ticket.TICKET_PRICE() + 1) })).to.be.revertedWith('InvalidAmount()');
-        });
     });
 });

@@ -15,6 +15,8 @@ interface ITicket {
 
     function buyTicket() external payable;
 
+    function buyTicketWithURI(string memory _tokenUri) external payable;
+
     function paused() external view returns (bool);
 
     function finished() external view returns (bool);
