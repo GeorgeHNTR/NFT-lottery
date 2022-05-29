@@ -2,6 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 let { NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE } = require("./utils/ticket");
+const nullAddress = '0x' + Array(41).join('0');
 
 describe('Ticket', () => {
     beforeEach(async function () {
@@ -19,7 +20,7 @@ describe('Ticket', () => {
     describe("Upon initialization", async function () {
         describe("Setting properties", async function () {
             beforeEach(async function () {
-                await this.Ticket.initialize(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE);
+                await this.Ticket.initialize(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE, nullAddress);
             });
 
             it('should set correct name', async function () {
@@ -37,39 +38,35 @@ describe('Ticket', () => {
             it('should set correct end time', async function () {
                 expect(await this.Ticket.END()).to.equal(END_BLOCK);
             });
-
-            it('should be paused', async function () {
-                expect(await this.Ticket.paused()).to.be.true;
-            });
         });
 
         describe("Throwing", async function () {
             it('should throw if attempt to initialize again', async function () {
-                await this.Ticket.initialize(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE);
-                await expect(this.Ticket.initialize("second-attempt", "second-attempt", START_BLOCK, END_BLOCK, PRICE)).to.be.revertedWith("Initializable: contract is already initialized");
+                await this.Ticket.initialize(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE, nullAddress);
+                await expect(this.Ticket.initialize("second-attempt", "second-attempt", START_BLOCK, END_BLOCK, PRICE, nullAddress)).to.be.revertedWith("Initializable: contract is already initialized");
             });
 
             it('should throw if empty string passed as name', async function () {
-                await expect(this.Ticket.initialize("", SYMBOL, START_BLOCK, END_BLOCK, PRICE)).to.be.revertedWith("InvalidInput()");
+                await expect(this.Ticket.initialize("", SYMBOL, START_BLOCK, END_BLOCK, PRICE, nullAddress)).to.be.revertedWith("InvalidInput()");
             });
 
             it('should throw if empty string passed as symbol', async function () {
-                await expect(this.Ticket.initialize(NAME, "", START_BLOCK, END_BLOCK, PRICE)).to.be.revertedWith("InvalidInput()");
+                await expect(this.Ticket.initialize(NAME, "", START_BLOCK, END_BLOCK, PRICE, nullAddress)).to.be.revertedWith("InvalidInput()");
             });
 
             it('should throw if starting earlier than now', async function () {
-                await expect(this.Ticket.initialize(NAME, SYMBOL, Number(await network.provider.send('eth_blockNumber')) - 1, END_BLOCK, PRICE)).to.be.revertedWith("InvalidInput()");
+                await expect(this.Ticket.initialize(NAME, SYMBOL, Number(await network.provider.send('eth_blockNumber')) - 1, END_BLOCK, PRICE, nullAddress)).to.be.revertedWith("InvalidInput()");
             });
 
             it('should throw if end block number less than start block number', async function () {
-                await expect(this.Ticket.initialize(NAME, SYMBOL, END_BLOCK, START_BLOCK, PRICE)).to.be.revertedWith("InvalidInput()");
+                await expect(this.Ticket.initialize(NAME, SYMBOL, END_BLOCK, START_BLOCK, PRICE, nullAddress)).to.be.revertedWith("InvalidInput()");
             });
         });
     });
 
     describe("Buying/minting tickets", async function () {
         beforeEach(async function () {
-            await this.Ticket.initialize(NAME, SYMBOL, CURRENT_BLOCK + 1, END_BLOCK, PRICE);
+            await this.Ticket.initialize(NAME, SYMBOL, CURRENT_BLOCK + 1, END_BLOCK, PRICE, nullAddress);
             await this.Ticket.buyTicket({ value: await this.Ticket.TICKET_PRICE() });
         });
         describe("Default", async function () {

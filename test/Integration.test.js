@@ -2,6 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 let { NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE } = require("./utils/ticket");
+let { RINKEBY__VRF_COORDINATOR, RINKEBY__LINK_TOKEN, RINKEBY__KEYHASH } = require('./utils/chainlink');
 
 describe('Integration', async function () {
     beforeEach(async function () {
@@ -13,8 +14,9 @@ describe('Integration', async function () {
         START_BLOCK = CURRENT_BLOCK + 5;
         END_BLOCK = START_BLOCK + 10;
 
+        this.WinnerPicker = await (await ethers.getContractFactory('WinnerPicker')).deploy(RINKEBY__VRF_COORDINATOR, RINKEBY__LINK_TOKEN, RINKEBY__KEYHASH);
         this.TicketBeacon = await (await ethers.getContractFactory('TicketBeacon')).deploy(this.TicketImplementation.address);
-        this.TicketFactory = await (await ethers.getContractFactory('TicketFactory')).deploy(this.TicketBeacon.address);
+        this.TicketFactory = await (await ethers.getContractFactory('TicketFactory')).deploy(this.TicketBeacon.address, this.WinnerPicker.address);
 
         await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, (START_BLOCK).toString(), (END_BLOCK).toString(), PRICE);
         const deployedTicketProxies = await this.TicketFactory.deployedTicketProxies();
