@@ -8,9 +8,9 @@ interface ITicket {
     function initialize(
         string calldata name_,
         string calldata symbol_,
-        uint256 _start,
-        uint256 _end,
-        uint256 _price
+        uint64 _start,
+        uint64 _end,
+        uint128 _price
     ) external;
 
     function buyTicket() external payable;

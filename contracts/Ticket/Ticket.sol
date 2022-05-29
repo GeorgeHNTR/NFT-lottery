@@ -11,10 +11,10 @@ error Paused();
 error NotPausedYet();
 
 contract Ticket is ITicket, ERC721URIStorageUpgradeable {
-    uint256 public START;
-    uint256 public END;
-    uint256 public TICKET_PRICE;
-    uint256 public id = 0;
+    uint64 public START;
+    uint64 public END;
+    uint128 public TICKET_PRICE;
+    uint128 public id = 0;
 
     modifier whenNotPaused() {
         if (paused()) revert Paused();
@@ -29,9 +29,9 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     function initialize(
         string calldata _name,
         string calldata _symbol,
-        uint256 _start,
-        uint256 _end,
-        uint256 _price
+        uint64 _start,
+        uint64 _end,
+        uint128 _price
     ) external override initializer {
         if (
             bytes(_name).length == 0 ||
