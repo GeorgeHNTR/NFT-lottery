@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-let { NAME, SYMBOL, START_TIME, END_BLOCK, PRICE } = require("./utils/utils");
+let { NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE } = require("./utils/utils");
 
 describe('TicketProxy', () => {
     beforeEach(async function () {
@@ -15,14 +15,19 @@ describe('TicketProxy', () => {
         CURRENT_BLOCK = Number(await network.provider.send('eth_blockNumber'));
         START_BLOCK = CURRENT_BLOCK + 5;
         END_BLOCK = START_BLOCK + 10;
+
+        await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE);
+        const deployedTicketProxyAddress = (await this.TicketFactory.deployedTicketProxies())[0];
+        this.deployedTicketProxy = await ethers.getContractAt('TicketProxy', deployedTicketProxyAddress);
     });
 
     describe("Upon deployment", async function () {
         it('should save correct beacon address', async function () {
-            await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE);
-            const deployedTicketProxyAddress = (await this.TicketFactory.deployedTicketProxies())[0];
-            const deployedTicketProxy = await ethers.getContractAt('TicketProxy', deployedTicketProxyAddress);
-            expect(await deployedTicketProxy.beacon()).to.equal(this.TicketBeacon.address);
+            expect(await this.deployedTicketProxy.beacon()).to.equal(this.TicketBeacon.address);
+        });
+
+        it('should save correct implementation address', async function () {
+            expect(await this.deployedTicketProxy.implementation()).to.equal(this.TicketImplementation.address);
         });
     });
 });

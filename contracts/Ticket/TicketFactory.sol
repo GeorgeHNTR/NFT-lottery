@@ -1,13 +1,15 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "./TicketBeacon.sol";
 import "./TicketProxy.sol";
 import "../interfaces/ITicket.sol";
 
 error OnlyOneTicketAtTime();
 
-contract TicketFactory {
+contract TicketFactory is Ownable {
     address public immutable BEACON_ADDRESS;
     address[] _deployedTicketProxies;
 
@@ -21,7 +23,7 @@ contract TicketFactory {
         uint256 _start,
         uint256 _end,
         uint256 _ticketPrice
-    ) external {
+    ) external onlyOwner {
         address _latestTicketProxy = latestTicketProxy();
         if (
             _latestTicketProxy != address(0x0) &&

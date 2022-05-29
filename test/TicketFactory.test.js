@@ -18,6 +18,12 @@ describe('TicketFactory', () => {
         END_BLOCK = START_BLOCK + 10;
     });
 
+    describe("Ownability", async function () {
+        it('should set owner', async function () {
+            expect(await this.TicketFactory.owner()).to.equal(deployer.address);
+        });
+    });
+
     describe("Proxy deployment", async function () {
         it('should save newly created proxy addresses', async function () {
             await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE);
@@ -27,6 +33,10 @@ describe('TicketFactory', () => {
         it('should revert if last ticket has not finished', async function () {
             await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE);
             await expect(this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE)).to.be.revertedWith("OnlyOneTicketAtTime()");
+        });
+
+        it('should revert if msg.sender is not owner', async function () {
+            await expect(this.TicketFactory.connect(randomAcc).deployTicketProxy(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE)).to.be.reverted;
         });
     });
 });

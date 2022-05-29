@@ -34,8 +34,16 @@ describe('Integration', async function () {
         expect(await this.TicketProxy.beacon()).to.equal(this.TicketBeacon.address);
     });
 
-    it('Factory should pass correct name and symbol', async function () {
+    it('Factory & beacon should save same owner', async function () {
+        expect(await this.TicketFactory.owner()).to.equal(deployer.address);
+        expect(await this.TicketBeacon.owner()).to.equal(deployer.address);
+    });
+
+    it('Factory should pass correct props', async function () {
         expect(await this.ProxiedTicket.name()).to.equal(NAME);
         expect(await this.ProxiedTicket.symbol()).to.equal(SYMBOL);
+        expect(await this.ProxiedTicket.START()).to.equal(START_BLOCK);
+        expect(await this.ProxiedTicket.END()).to.equal(END_BLOCK);
+        expect(await this.ProxiedTicket.TICKET_PRICE()).to.equal(PRICE);
     });
 });
