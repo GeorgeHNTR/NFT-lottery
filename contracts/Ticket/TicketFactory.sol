@@ -11,18 +11,20 @@ error OnlyOneTicketAtTime();
 
 contract TicketFactory is Ownable {
     address public immutable BEACON_ADDRESS;
+    address public immutable VRF_CONSUMER;
     address[] _deployedTicketProxies;
 
-    constructor(address _beaconAddress) {
+    constructor(address _beaconAddress, address _vrfConsumerAddress) {
         BEACON_ADDRESS = _beaconAddress;
+        VRF_CONSUMER = _vrfConsumerAddress;
     }
 
     function deployTicketProxy(
         string calldata _name,
         string calldata _symbol,
-        uint256 _start,
-        uint256 _end,
-        uint256 _ticketPrice
+        uint64 _start,
+        uint64 _end,
+        uint128 _ticketPrice
     ) external onlyOwner {
         address _latestTicketProxy = latestTicketProxy();
         if (
