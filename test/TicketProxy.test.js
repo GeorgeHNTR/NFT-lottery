@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-let { NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE } = require("./utils/utils");
+let { NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE } = require("./utils/ticket");
 
 describe('TicketProxy', () => {
     beforeEach(async function () {
