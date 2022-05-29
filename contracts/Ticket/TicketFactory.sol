@@ -26,13 +26,37 @@ contract TicketFactory is Ownable {
         uint64 _end,
         uint128 _ticketPrice
     ) external onlyOwner {
+        deployTicketProxyDeterministic(
+            _name,
+            _symbol,
+            _start,
+            _end,
+            _ticketPrice,
+            0
+        );
+    }
+
+    function deployTicketProxyDeterministic(
+        string calldata _name,
+        string calldata _symbol,
+        uint64 _start,
+        uint64 _end,
+        uint128 _ticketPrice,
+        uint256 _salt
+    ) public onlyOwner {
         address _latestTicketProxy = latestTicketProxy();
         if (
             _latestTicketProxy != address(0x0) &&
             !ITicket(_latestTicketProxy).finished()
         ) revert OnlyOneTicketAtTime();
 
-        TicketProxy newTicketProxy = new TicketProxy(BEACON_ADDRESS);
+        TicketProxy newTicketProxy;
+        _salt == 0
+            ? newTicketProxy = new TicketProxy(BEACON_ADDRESS)
+            : newTicketProxy = new TicketProxy{salt: bytes32(_salt)}(
+            BEACON_ADDRESS
+        );
+
         ITicket(address(newTicketProxy)).initialize(
             _name,
             _symbol,
