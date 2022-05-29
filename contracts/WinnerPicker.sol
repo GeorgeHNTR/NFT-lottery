@@ -1,11 +1,12 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 
 error InsufficientBalance();
 
-contract WinnerPicker is VRFConsumerBase {
+contract WinnerPicker is VRFConsumerBase, Ownable {
     bytes32 internal _keyHash;
     uint256 internal _fee;
 
@@ -27,6 +28,7 @@ contract WinnerPicker is VRFConsumerBase {
 
     function getRandomNumber(string memory callbackSignature)
         public
+        onlyOwner
         returns (bytes32 requestId)
     {
         if (LINK.balanceOf(address(this)) < _fee) revert InsufficientBalance();
