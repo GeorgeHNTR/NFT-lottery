@@ -8,9 +8,10 @@ error InsufficientFunds();
 
 /// @notice VRFConsumer contract for generating random number and then passing it to Ticket contracts that requested it
 contract WinnerPicker is VRFConsumerBase, Ownable {
+    LinkTokenInterface public immutable LINK_TOKEN;
     address internal immutable _vrfCoordinator;
     bytes32 internal _keyHash;
-    uint256 internal _fee;
+    uint256 public fee;
 
     /// @notice request id to contract address that made the request
     mapping(bytes32 => address) internal requests;
@@ -30,7 +31,8 @@ contract WinnerPicker is VRFConsumerBase, Ownable {
     ) VRFConsumerBase(vrfCoordinator_, link_) {
         _vrfCoordinator = vrfCoordinator_;
         _keyHash = keyHash_;
-        _fee = 0.25 * 10**18; // 0.25 LINK
+        LINK_TOKEN = LinkTokenInterface(link_);
+        fee = 0.25 * 10**18; // 0.25 LINK
     }
 
     /// @notice Requests random number from coordinator and saves the request
@@ -40,11 +42,11 @@ contract WinnerPicker is VRFConsumerBase, Ownable {
         public
         returns (bytes32 requestId)
     {
-        if (LINK.balanceOf(address(this)) < _fee) {
-            bool success = LINK.transferFrom(msg.sender, _vrfCoordinator, _fee);
+        if (LINK.balanceOf(address(this)) < fee) {
+            bool success = LINK.transferFrom(msg.sender, _vrfCoordinator, fee);
             if (!success) revert InsufficientFunds();
         }
-        requestId = requestRandomness(_keyHash, _fee);
+        requestId = requestRandomness(_keyHash, fee);
         requests[requestId] = msg.sender;
         callbacks[requestId] = callbackSignature;
     }

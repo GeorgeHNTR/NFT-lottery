@@ -79,7 +79,7 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     /// @notice Allows users to purchase tickets ones the sale has begun and has not yet finished
     function buyTicket() external payable override afterStart beforeEnd {
         if (msg.value != TICKET_PRICE) revert InvalidAmount();
-        _purchaseTicketForUser("");
+        _purchaseTicket("");
     }
 
     /// @notice Allows users to purchase tickets using token uri
@@ -92,21 +92,43 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
         beforeEnd
     {
         if (msg.value != TICKET_PRICE) revert InvalidAmount();
-        _purchaseTicketForUser(_tokenUri);
+        _purchaseTicket(_tokenUri);
     }
 
     /// @notice Purchases ticket for a user with an optional token uri
     /// @param _tokenUri The uri of the user's ticket pointing to an off-chain source of data
-    function _purchaseTicketForUser(string memory _tokenUri) private {
+    function _purchaseTicket(string memory _tokenUri) private {
         _mint(msg.sender, id);
         if (bytes(_tokenUri).length != 0) _setTokenURI(id, _tokenUri);
         id++;
+    }
+
+    /// @notice In order to later execute the pickWinner() function this contract needs a LINK balance
+    /// @notice The first user who funds this contract with LINK will receive 3 free tickets as a compensation
+    /// @dev The user has to approve LINK token transfer for an amount of WINNER_PICKER.fee() before executing this function
+    function fundVrfConsumer() external {
+        LinkTokenInterface LINK = WINNER_PICKER.LINK_TOKEN();
+        uint256 fee = WINNER_PICKER.fee();
+
+        // if we already have the needed LINK balance
+        if (LINK.balanceOf(address(this)) >= fee) return;
+
+        bool success = LINK.transferFrom(msg.sender, address(this), fee);
+        if (!success) revert TransactionFailed();
+
+        // mint 3 tickets to compensate msg.sender for the LINK tokens
+        for (uint8 i = 0; i < 3; i++) _purchaseTicket("");
     }
 
     /// @notice Sends request to the vrf consumer to generate a random number for later use
     /// @dev Does not directly pick the winner, instead passes the signature of the callback function
     /// @dev that has to be invoked ones the random number is ready
     function pickWinner() external override afterEnd {
+        WINNER_PICKER.LINK_TOKEN().transferFrom(
+            address(this),
+            address(WINNER_PICKER),
+            WINNER_PICKER.fee()
+        );
         WINNER_PICKER.getRandomNumber("saveWinner(uint256)");
     }
 
