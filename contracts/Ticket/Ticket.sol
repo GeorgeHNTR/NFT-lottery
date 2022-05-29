@@ -4,25 +4,36 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 
 import "../interfaces/ITicket.sol";
+import "../WinnerPicker.sol";
 
 error InvalidInput();
 error InvalidAmount();
-error Paused();
-error NotPausedYet();
+error NotStartedYet();
+error NotFinishedYet();
+error AlreadyFinished();
+error Unauthorized();
+error TransactionFailed();
 
 contract Ticket is ITicket, ERC721URIStorageUpgradeable {
+    WinnerPicker WINNER_PICKER;
     uint64 public START;
     uint64 public END;
     uint128 public TICKET_PRICE;
     uint128 public id = 0;
+    address public winner;
 
-    modifier whenNotPaused() {
-        if (paused()) revert Paused();
+    modifier afterStart() {
+        if (!started()) revert NotStartedYet();
         _;
     }
 
-    modifier whenPaused() {
-        if (!paused()) revert NotPausedYet();
+    modifier beforeEnd() {
+        if (finished()) revert AlreadyFinished();
+        _;
+    }
+
+    modifier afterEnd() {
+        if (!finished()) revert NotFinishedYet();
         _;
     }
 
@@ -31,7 +42,8 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
         string calldata _symbol,
         uint64 _start,
         uint64 _end,
-        uint128 _price
+        uint128 _price,
+        address _winnerPicker
     ) external override initializer {
         if (
             bytes(_name).length == 0 ||
@@ -46,9 +58,10 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
         START = _start;
         END = _end;
         TICKET_PRICE = _price;
+        WINNER_PICKER = WinnerPicker(_winnerPicker);
     }
 
-    function buyTicket() external payable override whenNotPaused {
+    function buyTicket() external payable override afterStart beforeEnd {
         if (msg.value != TICKET_PRICE) revert InvalidAmount();
         _mint(msg.sender, id);
         id++;
@@ -58,7 +71,8 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
         external
         payable
         override
-        whenNotPaused
+        afterStart
+        beforeEnd
     {
         if (msg.value != TICKET_PRICE) revert InvalidAmount();
         _mint(msg.sender, id);
@@ -66,8 +80,25 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
         id++;
     }
 
-    function paused() public view override returns (bool) {
-        return block.number < START || block.number > END;
+    function pickWinner() external afterEnd {
+        WINNER_PICKER.getRandomNumber("saveWinner(uint256)");
+    }
+
+    function saveWinner(uint256 _randomness) external afterEnd {
+        if (msg.sender != address(WINNER_PICKER)) revert Unauthorized();
+        uint256 winningTokenId = _randomness % id;
+        winner = ownerOf(winningTokenId);
+    }
+
+    function claimReward() external afterEnd {
+        if (msg.sender != winner) revert Unauthorized();
+
+        (bool success, ) = msg.sender.call{value: address(this).balance}("");
+        if (!success) revert TransactionFailed();
+    }
+
+    function started() public view override returns (bool) {
+        return block.number >= START;
     }
 
     function finished() public view override returns (bool) {

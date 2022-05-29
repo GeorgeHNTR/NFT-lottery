@@ -10,14 +10,21 @@ interface ITicket {
         string calldata symbol_,
         uint64 _start,
         uint64 _end,
-        uint128 _price
+        uint128 _price,
+        address _winnerPicker // vrf consumer
     ) external;
 
     function buyTicket() external payable;
 
     function buyTicketWithURI(string memory _tokenUri) external payable;
 
-    function paused() external view returns (bool);
+    function pickWinner() external;
+
+    function saveWinner(uint256 _randomness) external;
+
+    function claimReward() external;
+
+    function started() external view returns (bool);
 
     function finished() external view returns (bool);
 }

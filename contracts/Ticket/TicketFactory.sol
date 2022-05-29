@@ -38,7 +38,8 @@ contract TicketFactory is Ownable {
             _symbol,
             _start,
             _end,
-            _ticketPrice
+            _ticketPrice,
+            VRF_CONSUMER
         );
         _deployedTicketProxies.push(address(newTicketProxy));
     }
