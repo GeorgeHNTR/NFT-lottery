@@ -106,7 +106,7 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     /// @notice In order to later execute the pickWinner() function this contract needs a LINK balance
     /// @notice The first user who funds this contract with LINK will receive 3 free tickets as a compensation
     /// @dev The user has to approve LINK token transfer for an amount of WINNER_PICKER.fee() before executing this function
-    function fundVrfConsumer() external {
+    function _fundVrfConsumer() private {
         LinkTokenInterface LINK = WINNER_PICKER.LINK_TOKEN();
         uint256 fee = WINNER_PICKER.fee();
 
@@ -124,6 +124,7 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     /// @dev Does not directly pick the winner, instead passes the signature of the callback function
     /// @dev that has to be invoked ones the random number is ready
     function pickWinner() external override afterEnd {
+        _fundVrfConsumer();
         WINNER_PICKER.LINK_TOKEN().transferFrom(
             address(this),
             address(WINNER_PICKER),
