@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 interface ITicket {
     /**
      * @dev Do not forget to add the "initializer" custom modifer
+     * @param _winnerPicker is a VRFConsumer contract address
      */
     function initialize(
         string calldata name_,

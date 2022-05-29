@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./TicketBeacon.sol";
 import "./TicketProxy.sol";
 import "../interfaces/ITicket.sol";
 
@@ -14,11 +13,19 @@ contract TicketFactory is Ownable {
     address public immutable VRF_CONSUMER;
     address[] _deployedTicketProxies;
 
+    /// @notice Constructs the contract setting the needed dependecies' addresses
     constructor(address _beaconAddress, address _vrfConsumerAddress) {
         BEACON_ADDRESS = _beaconAddress;
         VRF_CONSUMER = _vrfConsumerAddress;
     }
 
+    /// @notice Deploys new ticket proxies
+    /// @param _name The name passed to the proxy initizaling function
+    /// @param _symbol The symbol passed to the proxy initizaling function
+    /// @param _start The start block number passed to the proxy initizaling function
+    /// @param _end The end block number passed to the proxy initizaling function
+    /// @param _ticketPrice The ticket price passed to the proxy initizaling function
+    /// @dev Invokes deployTicketProxyDeterministic() passing 0 as _salt in order to deploy the new proxy using just "create"
     function deployTicketProxy(
         string calldata _name,
         string calldata _symbol,
@@ -36,6 +43,9 @@ contract TicketFactory is Ownable {
         );
     }
 
+    /// @notice Deploys new ticket proxies using "create2"
+    /// @param _salt The salt passed to "create2" in order to form the address of the new proxy
+    /// @dev If _salt == 0 does not use "create2"
     function deployTicketProxyDeterministic(
         string calldata _name,
         string calldata _symbol,
@@ -68,10 +78,14 @@ contract TicketFactory is Ownable {
         _deployedTicketProxies.push(address(newTicketProxy));
     }
 
+    /// @notice Returns an array of the addresses of all the deployed proxies ever
+    /// @return _deployedTicketProxies All the deployed proxies ever
     function deployedTicketProxies() public view returns (address[] memory) {
         return _deployedTicketProxies;
     }
 
+    /// @notice Returns the latest ticket proxy deployed
+    /// @return _latestTicketProxy The latest ticket proxy deployed
     function latestTicketProxy()
         public
         view
