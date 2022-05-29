@@ -80,17 +80,17 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
         id++;
     }
 
-    function pickWinner() external afterEnd {
+    function pickWinner() external override afterEnd {
         WINNER_PICKER.getRandomNumber("saveWinner(uint256)");
     }
 
-    function saveWinner(uint256 _randomness) external afterEnd {
+    function saveWinner(uint256 _randomness) external override afterEnd {
         if (msg.sender != address(WINNER_PICKER)) revert Unauthorized();
         uint256 winningTokenId = _randomness % id;
         winner = ownerOf(winningTokenId);
     }
 
-    function claimReward() external afterEnd {
+    function claimReward() external override afterEnd {
         if (msg.sender != winner) revert Unauthorized();
 
         (bool success, ) = msg.sender.call{value: address(this).balance}("");
