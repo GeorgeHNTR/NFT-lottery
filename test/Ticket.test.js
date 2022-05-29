@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-const { NAME, SYMBOL, START_TIME, END_TIME, PRICE } = require("./utils/utils");
+let { NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE } = require("./utils/utils");
 
 describe('Ticket', () => {
     beforeEach(async function () {
@@ -10,12 +10,16 @@ describe('Ticket', () => {
         this.Ticket = await (
             await ethers.getContractFactory('Ticket')
         ).deploy();
+
+        CURRENT_BLOCK = Number(await network.provider.send('eth_blockNumber'));
+        START_BLOCK = CURRENT_BLOCK + 5;
+        END_BLOCK = START_BLOCK + 10;
     });
 
     describe("Upon initialization", async function () {
         describe("Setting properties", async function () {
             beforeEach(async function () {
-                await this.Ticket.initialize(NAME, SYMBOL, START_TIME, END_TIME, PRICE);
+                await this.Ticket.initialize(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE);
             });
 
             it('should set correct name', async function () {
@@ -27,11 +31,11 @@ describe('Ticket', () => {
             });
 
             it('should set correct start time', async function () {
-                expect(await this.Ticket.START()).to.equal(START_TIME);
+                expect(await this.Ticket.START()).to.equal(START_BLOCK);
             });
 
             it('should set correct end time', async function () {
-                expect(await this.Ticket.END()).to.equal(END_TIME);
+                expect(await this.Ticket.END()).to.equal(END_BLOCK);
             });
 
             it('should be paused', async function () {
@@ -41,31 +45,31 @@ describe('Ticket', () => {
 
         describe("Throwing", async function () {
             it('should throw if attempt to initialize again', async function () {
-                await this.Ticket.initialize(NAME, SYMBOL, START_TIME, END_TIME, PRICE);
-                await expect(this.Ticket.initialize("second-attempt", "second-attempt", START_TIME, END_TIME, PRICE)).to.be.revertedWith("Initializable: contract is already initialized");
+                await this.Ticket.initialize(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE);
+                await expect(this.Ticket.initialize("second-attempt", "second-attempt", START_BLOCK, END_BLOCK, PRICE)).to.be.revertedWith("Initializable: contract is already initialized");
             });
 
             it('should throw if empty string passed as name', async function () {
-                await expect(this.Ticket.initialize("", "second-attempt", START_TIME, END_TIME, PRICE)).to.be.revertedWith("InvalidInput()");
+                await expect(this.Ticket.initialize("", SYMBOL, START_BLOCK, END_BLOCK, PRICE)).to.be.revertedWith("InvalidInput()");
             });
 
             it('should throw if empty string passed as symbol', async function () {
-                await expect(this.Ticket.initialize("second-attempt", "", START_TIME, END_TIME, PRICE)).to.be.revertedWith("InvalidInput()");
+                await expect(this.Ticket.initialize(NAME, "", START_BLOCK, END_BLOCK, PRICE)).to.be.revertedWith("InvalidInput()");
             });
 
             it('should throw if starting earlier than now', async function () {
-                await expect(this.Ticket.initialize("second-attempt", "", START_TIME - 1, END_TIME, PRICE)).to.be.revertedWith("InvalidInput()");
+                await expect(this.Ticket.initialize(NAME, SYMBOL, Number(await network.provider.send('eth_blockNumber')) - 1, END_BLOCK, PRICE)).to.be.revertedWith("InvalidInput()");
             });
 
-            it('should throw if lasting less than 2 hours', async function () {
-                await expect(this.Ticket.initialize("second-attempt", "", START_TIME, END_TIME - 1, PRICE)).to.be.revertedWith("InvalidInput()");
+            it('should throw if end block number less than start block number', async function () {
+                await expect(this.Ticket.initialize(NAME, SYMBOL, END_BLOCK, START_BLOCK, PRICE)).to.be.revertedWith("InvalidInput()");
             });
         });
     });
 
     describe("Buying/minting tickets", async function () {
         beforeEach(async function () {
-            await this.Ticket.initialize(NAME, SYMBOL, 0, END_TIME, PRICE);
+            await this.Ticket.initialize(NAME, SYMBOL, CURRENT_BLOCK + 1, END_BLOCK, PRICE);
             await this.Ticket.buyTicket({ value: await this.Ticket.TICKET_PRICE() });
         });
 
@@ -83,7 +87,7 @@ describe('Ticket', () => {
             expect(await this.Ticket.id()).to.equal(currentId + 1);
         });
 
-        it('should cost exactly 0.001 ETH', async function () {
+        it('should cost the price amount', async function () {
             await expect(this.Ticket.buyTicket({ value: (await this.Ticket.TICKET_PRICE() - 1) })).to.be.revertedWith('InvalidAmount()');
             await expect(this.Ticket.buyTicket({ value: (await this.Ticket.TICKET_PRICE() + 1) })).to.be.revertedWith('InvalidAmount()');
         });

@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-const { NAME, SYMBOL, START_TIME, END_TIME, PRICE } = require("./utils/utils");
+let { NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE } = require("./utils/utils");
 
 describe('Integration', async function () {
     beforeEach(async function () {
@@ -9,10 +9,14 @@ describe('Integration', async function () {
 
         this.TicketImplementation = await (await ethers.getContractFactory('Ticket')).deploy();
 
+        CURRENT_BLOCK = Number(await network.provider.send('eth_blockNumber'));
+        START_BLOCK = CURRENT_BLOCK + 5;
+        END_BLOCK = START_BLOCK + 10;
+
         this.TicketBeacon = await (await ethers.getContractFactory('TicketBeacon')).deploy(this.TicketImplementation.address);
         this.TicketFactory = await (await ethers.getContractFactory('TicketFactory')).deploy(this.TicketBeacon.address);
 
-        await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, (START_TIME).toString(), (END_TIME).toString(), PRICE);
+        await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, (START_BLOCK).toString(), (END_BLOCK).toString(), PRICE);
         const deployedTicketProxies = await this.TicketFactory.deployedTicketProxies();
         const ticketProxyAddress = deployedTicketProxies[deployedTicketProxies.length - 1];
 

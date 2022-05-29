@@ -36,11 +36,10 @@ contract Ticket is ITicket, ERC721Upgradeable {
         if (
             bytes(_name).length == 0 ||
             bytes(_symbol).length == 0 ||
-            _price == 0
+            _price == 0 ||
+            _start < block.number ||
+            _end <= _start
         ) revert InvalidInput();
-
-        if (_start < block.timestamp) _start = block.timestamp; // start immediately
-        if (_start > _end) revert InvalidInput();
 
         __ERC721_init_unchained(_name, _symbol);
 
@@ -56,10 +55,10 @@ contract Ticket is ITicket, ERC721Upgradeable {
     }
 
     function paused() public view override returns (bool) {
-        return block.timestamp < START || block.timestamp > END;
+        return block.number < START || block.number > END;
     }
 
     function finished() public view override returns (bool) {
-        return block.timestamp > END;
+        return block.number > END;
     }
 }
