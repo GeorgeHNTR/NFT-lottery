@@ -79,13 +79,12 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     /// @notice Allows users to purchase tickets ones the sale has begun and has not yet finished
     function buyTicket() external payable override afterStart beforeEnd {
         if (msg.value != TICKET_PRICE) revert InvalidAmount();
-        _mint(msg.sender, id);
-        id++;
+        _purchaseTicketForUser("");
     }
 
     /// @notice Allows users to purchase tickets using token uri
     /// @param _tokenUri The uri of the user's ticket pointing to an off-chain source of data
-    function buyTicketWithURI(string memory _tokenUri)
+    function buyTicketWithURI(string calldata _tokenUri)
         external
         payable
         override
@@ -93,8 +92,14 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
         beforeEnd
     {
         if (msg.value != TICKET_PRICE) revert InvalidAmount();
+        _purchaseTicketForUser(_tokenUri);
+    }
+
+    /// @notice Purchases ticket for a user with an optional token uri
+    /// @param _tokenUri The uri of the user's ticket pointing to an off-chain source of data
+    function _purchaseTicketForUser(string memory _tokenUri) private {
         _mint(msg.sender, id);
-        _setTokenURI(id, _tokenUri);
+        if (bytes(_tokenUri).length != 0) _setTokenURI(id, _tokenUri);
         id++;
     }
 
