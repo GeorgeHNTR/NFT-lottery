@@ -6,10 +6,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Ticket/TicketBeacon.sol";
 import "./Ticket/TicketFactory.sol";
 
+/// @author Georgi Nikolaev Georgiev
+/// @notice Ownable contract used to manage the Lottery system - the factory and the beacon contracts
 contract LotteryManager is Ownable {
     TicketBeacon public ticketBeacon;
     TicketFactory public ticketFactory;
 
+    /// @notice Ownable contract used to manage the Lottery system - the factory and the beacon contracts
+    /// @param implementation_ The address of the Ticket implementation that is initially used by the beacon
+    /// @param winnerPicker_ The VRF Consumer contract address that will be used to fetch the random numbers for selecting a winning ticket
     function setupLottery(address implementation_, address winnerPicker_)
         external
         onlyOwner
@@ -18,11 +23,16 @@ contract LotteryManager is Ownable {
         ticketFactory = new TicketFactory(address(ticketBeacon), winnerPicker_);
     }
 
+    /// @notice Transfers both the beacon and factory ownership to a single account
+    /// @param newOwner The address of the new Lottery manager
+    /// @dev It is highly recommended that the new manager is a contract (multisig wallet, DAO etc) that implements the same method
     function transferLotteryOwnership(address newOwner) external onlyOwner {
         ticketBeacon.transferOwnership(newOwner);
         ticketFactory.transferOwnership(newOwner);
     }
 
+    /// @notice Changes the address of the logic/implementation contract used in the lottery system
+    /// @param newImplementation The address of the new implementation that is going to be used by the ticket proxies
     function changeImplementation(address newImplementation)
         external
         onlyOwner
@@ -30,6 +40,7 @@ contract LotteryManager is Ownable {
         ticketBeacon.upgradeTo(newImplementation);
     }
 
+    /// @notice Calls the deployTicketProxy function of the factory
     function deployTicketProxy(
         string calldata _name,
         string calldata _symbol,
@@ -46,6 +57,7 @@ contract LotteryManager is Ownable {
         );
     }
 
+    /// @notice Calls the deployTicketProxyDeterministic function of the factory
     function deployTicketProxyDeterministic(
         string calldata _name,
         string calldata _symbol,
