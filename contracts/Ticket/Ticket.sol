@@ -20,26 +20,21 @@ error TransactionFailed();
 contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     WinnerPicker WINNER_PICKER;
 
-    uint64 public START;
-    uint64 public END;
+    uint64 public START_BLOCK_NUMBER;
+    uint64 public END_BLOCK_NUMBER;
 
     uint128 public TICKET_PRICE;
     uint128 public id = 0;
 
     address public winner;
 
-    modifier afterStart() {
-        if (!started()) revert Unavailable();
+    modifier fromBlock(uint64 blockNumber) {
+        if (block.number < blockNumber) revert Unavailable();
         _;
     }
 
-    modifier beforeEnd() {
-        if (finished()) revert Unavailable();
-        _;
-    }
-
-    modifier afterEnd() {
-        if (!finished()) revert Unavailable();
+    modifier toBlock(uint64 blockNumber) {
+        if (block.number > blockNumber) revert Unavailable();
         _;
     }
 
@@ -68,14 +63,20 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
 
         __ERC721_init_unchained(_name, _symbol);
 
-        START = _start;
-        END = _end;
+        START_BLOCK_NUMBER = _start;
+        END_BLOCK_NUMBER = _end;
         TICKET_PRICE = _price;
         WINNER_PICKER = WinnerPicker(_winnerPicker);
     }
 
     /// @notice Allows users to purchase tickets ones the sale has begun and has not yet finished
-    function buyTicket() external payable override afterStart beforeEnd {
+    function buyTicket()
+        external
+        payable
+        override
+        fromBlock(START_BLOCK_NUMBER)
+        toBlock(END_BLOCK_NUMBER)
+    {
         if (msg.value != TICKET_PRICE) revert InvalidAmount();
         _purchaseTicket("");
     }
@@ -86,8 +87,8 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
         external
         payable
         override
-        afterStart
-        beforeEnd
+        fromBlock(START_BLOCK_NUMBER)
+        toBlock(END_BLOCK_NUMBER)
     {
         if (msg.value != TICKET_PRICE) revert InvalidAmount();
         _purchaseTicket(_tokenUri);
@@ -117,7 +118,7 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     /// @notice Sends request to the vrf consumer to generate a random number for later use
     /// @dev Does not directly pick the winner, instead passes the signature of the callback function
     /// @dev that has to be invoked ones the random number is ready
-    function pickWinner() external override afterEnd {
+    function pickWinner() external override fromBlock(END_BLOCK_NUMBER) {
         _fundVrfConsumer();
         WINNER_PICKER.LINK_TOKEN().transferFrom(
             address(this),
@@ -131,7 +132,7 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     /// @param _randomness Random number passed by the winner_picker contract
     /// @dev Winning ticket id is calculated using modulo division
     /// @dev Reverts if called from any contract that is not the winner picker
-    function saveWinner(uint256 _randomness) external override afterEnd {
+    function saveWinner(uint256 _randomness) external override fromBlock(END_BLOCK_NUMBER) {
         if (msg.sender != address(WINNER_PICKER)) revert Unauthorized();
         uint256 winningTokenId = _randomness % id;
         winner = ownerOf(winningTokenId);
@@ -139,7 +140,7 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
 
     /// @notice Transfers all gathered funds from the lottery to the winner address
     /// @dev Pull over Push pattern
-    function claimReward() external override afterEnd {
+    function claimReward() external override fromBlock(END_BLOCK_NUMBER) {
         if (msg.sender != winner) revert Unauthorized();
 
         (bool success, ) = msg.sender.call{value: address(this).balance}("");
@@ -149,12 +150,12 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     /// @notice Tracks whether the sale has started
     /// @return bool A boolean showing whether the sale has started
     function started() public view override returns (bool) {
-        return block.number >= START;
+        return block.number >= START_BLOCK_NUMBER;
     }
 
     /// @notice Tracks whether the sale has finished
     /// @return bool A boolean showing whether the sale has finished
     function finished() public view override returns (bool) {
-        return block.number > END;
+        return block.number > END_BLOCK_NUMBER;
     }
 }

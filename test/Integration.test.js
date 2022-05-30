@@ -44,8 +44,8 @@ describe('Integration', async function () {
     it('Factory should pass correct props', async function () {
         expect(await this.ProxiedTicket.name()).to.equal(NAME);
         expect(await this.ProxiedTicket.symbol()).to.equal(SYMBOL);
-        expect(await this.ProxiedTicket.START()).to.equal(START_BLOCK);
-        expect(await this.ProxiedTicket.END()).to.equal(END_BLOCK);
+        expect(await this.ProxiedTicket.START_BLOCK_NUMBER()).to.equal(START_BLOCK);
+        expect(await this.ProxiedTicket.END_BLOCK_NUMBER()).to.equal(END_BLOCK);
         expect(await this.ProxiedTicket.TICKET_PRICE()).to.equal(PRICE);
     });
 });

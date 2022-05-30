@@ -32,11 +32,11 @@ describe('Ticket', () => {
             });
 
             it('should set correct start time', async function () {
-                expect(await this.Ticket.START()).to.equal(START_BLOCK);
+                expect(await this.Ticket.START_BLOCK_NUMBER()).to.equal(START_BLOCK);
             });
 
             it('should set correct end time', async function () {
-                expect(await this.Ticket.END()).to.equal(END_BLOCK);
+                expect(await this.Ticket.END_BLOCK_NUMBER()).to.equal(END_BLOCK);
             });
         });
 
