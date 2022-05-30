@@ -1,8 +1,8 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-let { NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE } = require("./utils/ticket");
-let { RINKEBY__VRF_COORDINATOR, RINKEBY__LINK_TOKEN, RINKEBY__KEYHASH } = require('./utils/chainlink');
+let { NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE } = require("../utils/ticket");
+let { RINKEBY__VRF_COORDINATOR, RINKEBY__LINK_TOKEN, RINKEBY__KEYHASH } = require('../utils/chainlink');
 
 describe('TicketFactory', () => {
 

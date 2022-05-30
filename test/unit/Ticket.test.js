@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-let { NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE } = require("./utils/ticket");
+let { NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE } = require("../utils/ticket");
 const nullAddress = '0x' + Array(41).join('0');
 
 describe('Ticket', () => {
