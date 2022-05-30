@@ -44,3 +44,5 @@
 - `npm i` or `yarn`
 - `npm run test` or `npx hardhat test`
 
+### Documentation
+https://lottery-docgen.web.app
