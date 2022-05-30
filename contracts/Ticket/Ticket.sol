@@ -8,9 +8,7 @@ import "../WinnerPicker.sol";
 
 error InvalidInput();
 error InvalidAmount();
-error NotStartedYet();
-error NotFinishedYet();
-error AlreadyFinished();
+error Unavailable();
 error Unauthorized();
 error TransactionFailed();
 
@@ -31,17 +29,17 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     address public winner;
 
     modifier afterStart() {
-        if (!started()) revert NotStartedYet();
+        if (!started()) revert Unavailable();
         _;
     }
 
     modifier beforeEnd() {
-        if (finished()) revert AlreadyFinished();
+        if (finished()) revert Unavailable();
         _;
     }
 
     modifier afterEnd() {
-        if (!finished()) revert NotFinishedYet();
+        if (!finished()) revert Unavailable();
         _;
     }
 
