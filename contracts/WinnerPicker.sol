@@ -1,13 +1,12 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 
 error InsufficientFunds();
 
 /// @notice VRFConsumer contract for generating random number and then passing it to Ticket contracts that requested it
-contract WinnerPicker is VRFConsumerBase, Ownable {
+contract WinnerPicker is VRFConsumerBase {
     LinkTokenInterface public immutable LINK_TOKEN;
     address internal immutable _vrfCoordinator;
     bytes32 internal _keyHash;
