@@ -41,7 +41,7 @@
 
 ### Run & test
 - `git clone https://github.com/GeorgiGeorgiev7/NFT-lottery`
-- `npm i` or `yarn`
+- `yarn`
 - `npm run test` or `npx hardhat test`
 
 ### Documentation
