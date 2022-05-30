@@ -12,6 +12,16 @@ contract LotteryManager is Ownable {
     TicketBeacon public ticketBeacon;
     TicketFactory public ticketFactory;
 
+    event ImplementationChanged(
+        address indexed previousImplementation,
+        address indexed newImplementation
+    );
+
+    event LotteryOwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
+
     /// @notice Ownable contract used to manage the Lottery system - the factory and the beacon contracts
     /// @param implementation_ The address of the Ticket implementation that is initially used by the beacon
     /// @param winnerPicker_ The VRF Consumer contract address that will be used to fetch the random numbers for selecting a winning ticket
@@ -23,21 +33,15 @@ contract LotteryManager is Ownable {
         ticketFactory = new TicketFactory(address(ticketBeacon), winnerPicker_);
     }
 
-    /// @notice Transfers both the beacon and factory ownership to a single account
-    /// @param newOwner The address of the new Lottery manager
-    /// @dev It is highly recommended that the new manager is a contract (multisig wallet, DAO etc) that implements the same method
-    function transferLotteryOwnership(address newOwner) external onlyOwner {
-        ticketBeacon.transferOwnership(newOwner);
-        ticketFactory.transferOwnership(newOwner);
-    }
-
     /// @notice Changes the address of the logic/implementation contract used in the lottery system
     /// @param newImplementation The address of the new implementation that is going to be used by the ticket proxies
     function changeImplementation(address newImplementation)
         external
         onlyOwner
     {
+        address previousImplementation = ticketBeacon.implementation();
         ticketBeacon.upgradeTo(newImplementation);
+        emit ImplementationChanged(previousImplementation, newImplementation);
     }
 
     /// @notice Calls the deployTicketProxy function of the factory
@@ -74,5 +78,14 @@ contract LotteryManager is Ownable {
             _ticketPrice,
             _salt
         );
+    }
+
+    /// @notice Transfers both the beacon and factory ownership to a single account
+    /// @param newOwner The address of the new Lottery manager
+    /// @dev It is highly recommended that the new manager is a contract (multisig wallet, DAO etc) that implements the same method
+    function transferLotteryOwnership(address newOwner) external onlyOwner {
+        ticketBeacon.transferOwnership(newOwner);
+        ticketFactory.transferOwnership(newOwner);
+        emit LotteryOwnershipTransferred(address(this), newOwner);
     }
 }
