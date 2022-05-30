@@ -3,10 +3,8 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./Ticket/Ticket.sol";
 import "./Ticket/TicketBeacon.sol";
 import "./Ticket/TicketFactory.sol";
-import "./WinnerPicker.sol";
 
 contract LotteryManager is Ownable {
     TicketBeacon public ticketBeacon;
