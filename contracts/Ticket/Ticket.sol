@@ -104,7 +104,6 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     }
 
     /// @notice In order to later execute the pickWinner() function this contract needs a LINK balance
-    /// @notice The first user who funds this contract with LINK will receive 3 free tickets as a compensation
     /// @dev The user has to approve LINK token transfer for an amount of WINNER_PICKER.fee() before executing this function
     function _fundVrfConsumer() private {
         LinkTokenInterface LINK = WINNER_PICKER.LINK_TOKEN();
@@ -115,9 +114,6 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
 
         bool success = LINK.transferFrom(msg.sender, address(this), fee);
         if (!success) revert TransactionFailed();
-
-        // mint 3 tickets to compensate msg.sender for the LINK tokens
-        for (uint8 i = 0; i < 3; i++) _purchaseTicket("");
     }
 
     /// @notice Sends request to the vrf consumer to generate a random number for later use
