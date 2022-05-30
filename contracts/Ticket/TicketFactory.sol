@@ -13,6 +13,8 @@ contract TicketFactory is Ownable {
     address public immutable VRF_CONSUMER;
     address[] _deployedTicketProxies;
 
+    event NewLotteryDeployed(address indexed newLottery);
+
     /// @notice Constructs the contract setting the needed dependecies' addresses
     constructor(address _beaconAddress, address _vrfConsumerAddress) {
         BEACON_ADDRESS = _beaconAddress;
@@ -60,14 +62,14 @@ contract TicketFactory is Ownable {
             !ITicket(_latestTicketProxy).finished()
         ) revert OnlyOneTicketAtTime();
 
-        TicketProxy newTicketProxy;
+        address newTicketProxy;
         _salt == 0
-            ? newTicketProxy = new TicketProxy(BEACON_ADDRESS)
-            : newTicketProxy = new TicketProxy{salt: bytes32(_salt)}(
+            ? newTicketProxy = address(new TicketProxy(BEACON_ADDRESS))
+            : newTicketProxy = address(new TicketProxy{salt: bytes32(_salt)}(
             BEACON_ADDRESS
-        );
+        ));
 
-        ITicket(address(newTicketProxy)).initialize(
+        ITicket(newTicketProxy).initialize(
             _name,
             _symbol,
             _start,
@@ -75,7 +77,9 @@ contract TicketFactory is Ownable {
             _ticketPrice,
             VRF_CONSUMER
         );
-        _deployedTicketProxies.push(address(newTicketProxy));
+        _deployedTicketProxies.push(newTicketProxy);
+        
+        emit NewLotteryDeployed(newTicketProxy);
     }
 
     /// @notice Returns an array of the addresses of all the deployed proxies ever

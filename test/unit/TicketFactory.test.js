@@ -1,44 +1,66 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-let { NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE } = require("../utils/ticket");
 let { RINKEBY__VRF_COORDINATOR, RINKEBY__LINK_TOKEN, RINKEBY__KEYHASH } = require('../utils/chainlink');
+let { NAME, SYMBOL, PRICE, getBlocks } = require("../utils/ticket");
 
-describe('TicketFactory', () => {
-
+describe('TicketFactory', async function () {
     beforeEach(async function () {
         [deployer, randomAcc] = await ethers.getSigners();
-
-        this.TicketImplementation = await (await ethers.getContractFactory('Ticket')).deploy();
-
-        this.WinnerPicker = await (await ethers.getContractFactory('WinnerPicker')).deploy(RINKEBY__VRF_COORDINATOR, RINKEBY__LINK_TOKEN, RINKEBY__KEYHASH);
-        this.TicketBeacon = await (await ethers.getContractFactory('TicketBeacon')).deploy(this.TicketImplementation.address);
-        this.TicketFactory = await (await ethers.getContractFactory('TicketFactory')).deploy(this.TicketBeacon.address, this.WinnerPicker.address);
-
-        CURRENT_BLOCK = Number(await network.provider.send('eth_blockNumber'));
-        START_BLOCK = CURRENT_BLOCK + 5;
-        END_BLOCK = START_BLOCK + 10;
+        this.TicketImplementationAddress = (await (await ethers.getContractFactory("Ticket")).deploy()).address;
+        this.TicketBeaconAddress = (await (await ethers.getContractFactory("TicketBeacon"))
+            .deploy(this.TicketImplementationAddress)).address;
+        this.WinnerPickerAddress = (await (await ethers.getContractFactory("WinnerPicker"))
+            .deploy(RINKEBY__VRF_COORDINATOR, RINKEBY__LINK_TOKEN, RINKEBY__KEYHASH)).address;
+        this.TicketFactory = await (await ethers.getContractFactory("TicketFactory"))
+            .deploy(this.TicketBeaconAddress, this.WinnerPickerAddress);
     });
 
-    describe("Ownability", async function () {
-        it('should set owner', async function () {
-            expect(await this.TicketFactory.owner()).to.equal(deployer.address);
+    describe("Upon deployment", async function () {
+        it('should save the beacon address', async function () {
+            expect(await this.TicketFactory.BEACON_ADDRESS()).to.equal(this.TicketBeaconAddress);
+        });
+
+        it('should save the vrf consumer address', async function () {
+            expect(await this.TicketFactory.VRF_CONSUMER()).to.equal(this.WinnerPickerAddress);
         });
     });
 
-    describe("Proxy deployment", async function () {
-        it('should save newly created proxy addresses', async function () {
-            await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE);
-            expect(await this.TicketFactory.deployedTicketProxies()).to.have.lengthOf(1);
+    describe("Deployments", async function () {
+        beforeEach(async function () {
+            this.BLOCKS = await getBlocks();
+            this.PARAMS = [NAME, SYMBOL, this.BLOCKS.START_BLOCK, this.BLOCKS.END_BLOCK, PRICE];
+            this.salt = 1;
         });
 
-        it('should revert if last ticket has not finished', async function () {
-            await this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE);
-            await expect(this.TicketFactory.deployTicketProxy(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE)).to.be.revertedWith("OnlyOneTicketAtTime()");
+        it('should be access restricted to only owner (normal)', async function () {
+            await expect(this.TicketFactory.deployTicketProxy(...this.PARAMS)).to.not.be.revertedWith("Ownable: caller is not the owner");
+            await expect(this.TicketFactory.connect(randomAcc).deployTicketProxy(...this.PARAMS)).to.be.revertedWith("Ownable: caller is not the owner");
         });
 
-        it('should revert if msg.sender is not owner', async function () {
-            await expect(this.TicketFactory.connect(randomAcc).deployTicketProxy(NAME, SYMBOL, START_BLOCK, END_BLOCK, PRICE)).to.be.reverted;
+        it('should be access restricted to only owner (deterministic)', async function () {
+            await expect(this.TicketFactory.deployTicketProxyDeterministic(...this.PARAMS, this.salt)).to.not.be.revertedWith("Ownable: caller is not the owner");
+            await expect(this.TicketFactory.connect(randomAcc).deployTicketProxyDeterministic(...this.PARAMS, this.salt)).to.be.revertedWith("Ownable: caller is not the owner");
+        });
+
+        it('should emit event (normal)', async function () {
+            await expect(this.TicketFactory.deployTicketProxy(...this.PARAMS))
+                .to.emit(this.TicketFactory, "NewLotteryDeployed");
+        });
+
+        it('should emit event (deterministic)', async function () {
+            await expect(this.TicketFactory.deployTicketProxyDeterministic(...this.PARAMS, this.salt))
+                .to.emit(this.TicketFactory, "NewLotteryDeployed");
+        });
+    });
+
+    describe("Getters", async function () {
+        it('should provide getter for the address of the latest deployed proxy', async function () {
+            expect(await this.TicketFactory.latestTicketProxy()).to.equal(ethers.constants.AddressZero);
+        });
+
+        it('should provide getter for an array of the address of the all evert proxies deployed', async function () {
+            expect(await this.TicketFactory.deployedTicketProxies()).to.be.empty;
         });
     });
 });
