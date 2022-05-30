@@ -11,6 +11,7 @@ error InvalidAmount();
 error Unavailable();
 error Unauthorized();
 error TransactionFailed();
+error WinnerAlreadyChosen();
 
 /// @author Georgi Nikolaev Georgiev
 /// @notice Upgradeable ERC721 lottery contract
@@ -26,7 +27,14 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     uint128 public TICKET_PRICE;
     uint128 public id = 0;
 
-    address public winner;
+    uint256 public bigWinnerTicketId;
+
+    uint256 public smallWinnerTicketId;
+    uint256 public smallWinnerRewardAmount;
+
+    bool pickedSmall;
+    bool pickedBig;
+    bool payedSmall;
 
     modifier fromBlock(uint64 blockNumber) {
         if (block.number < blockNumber) revert Unavailable();
@@ -35,6 +43,11 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
 
     modifier toBlock(uint64 blockNumber) {
         if (block.number > blockNumber) revert Unavailable();
+        _;
+    }
+
+    modifier onlyWinnerPicker() {
+        if (msg.sender == address(WINNER_PICKER)) revert Unauthorized();
         _;
     }
 
@@ -102,48 +115,99 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
         id++;
     }
 
+    /// @notice Sends request to the vrf consumer to generate a random number for later use
+    /// @dev Does not directly pick the winner, instead passes the signature of the callback function
+    /// @dev that has to be invoked ones the random number is ready
+    function pickWinner()
+        external
+        override
+        fromBlock((START_BLOCK_NUMBER + END_BLOCK_NUMBER) / 2)
+    {
+        if (
+            (block.number < END_BLOCK_NUMBER && pickedSmall) ||
+            (block.number >= END_BLOCK_NUMBER && pickedBig)
+        ) revert WinnerAlreadyChosen();
+
+        _fundVrfConsumer();
+
+        if (block.number < END_BLOCK_NUMBER) {
+            WINNER_PICKER.getRandomNumber("saveSmallWinner(uint256)");
+            pickedSmall = true;
+        } else {
+            WINNER_PICKER.getRandomNumber("saveBigWinner(uint256)");
+            pickedBig = true;
+        }
+    }
+
     /// @notice In order to later execute the pickWinner() function this contract needs a LINK balance
     /// @dev The user has to approve LINK token transfer for an amount of WINNER_PICKER.fee() before executing this function
     function _fundVrfConsumer() private {
         LinkTokenInterface LINK = WINNER_PICKER.LINK_TOKEN();
         uint256 fee = WINNER_PICKER.fee();
 
-        // if we already have the needed LINK balance
-        if (LINK.balanceOf(address(this)) >= fee) return;
-
-        bool success = LINK.transferFrom(msg.sender, address(this), fee);
+        bool success = LINK.transferFrom(
+            msg.sender,
+            address(WINNER_PICKER),
+            fee
+        );
         if (!success) revert TransactionFailed();
     }
 
-    /// @notice Sends request to the vrf consumer to generate a random number for later use
-    /// @dev Does not directly pick the winner, instead passes the signature of the callback function
-    /// @dev that has to be invoked ones the random number is ready
-    function pickWinner() external override fromBlock(END_BLOCK_NUMBER) {
-        _fundVrfConsumer();
-        WINNER_PICKER.LINK_TOKEN().transferFrom(
-            address(this),
-            address(WINNER_PICKER),
-            WINNER_PICKER.fee()
-        );
-        WINNER_PICKER.getRandomNumber("saveWinner(uint256)");
-    }
-
-    /// @notice Selects the winning ticket and saves its owner as a lottery winner
+    /// @notice Selects the winning ticket and saves it as the lottery's small winner
+    /// @notice Small winner will receive half (50%) of the current lottery's gathered funds
     /// @param _randomness Random number passed by the winner_picker contract
     /// @dev Winning ticket id is calculated using modulo division
     /// @dev Reverts if called from any contract that is not the winner picker
-    function saveWinner(uint256 _randomness) external override fromBlock(END_BLOCK_NUMBER) {
-        if (msg.sender != address(WINNER_PICKER)) revert Unauthorized();
+    function saveSmallWinner(uint256 _randomness)
+        external
+        override
+        onlyWinnerPicker
+    {
         uint256 winningTokenId = _randomness % id;
-        winner = ownerOf(winningTokenId);
+        smallWinnerTicketId = winningTokenId;
+        smallWinnerRewardAmount = address(this).balance / 2;
     }
 
-    /// @notice Transfers all gathered funds from the lottery to the winner address
+    /// @notice Selects the winning ticket and saves it as the lottery's big winner
+    /// @param _randomness Random number passed by the winner_picker contract
+    /// @dev Winning ticket id is calculated using modulo division
+    /// @dev Reverts if called from any contract that is not the winner picker
+    function saveBigWinner(uint256 _randomness)
+        external
+        override
+        onlyWinnerPicker
+    {
+        uint256 winningTokenId = _randomness % id;
+        bigWinnerTicketId = winningTokenId;
+    }
+
+    /// @notice Transfers all gathered funds from the lottery to winner
     /// @dev Pull over Push pattern
-    function claimReward() external override fromBlock(END_BLOCK_NUMBER) {
+    function claimSmallReward() external override fromBlock(END_BLOCK_NUMBER) {
+        address winner = ownerOf(smallWinnerTicketId);
+
+        if (msg.sender != winner) revert Unauthorized();
+        if (payedSmall) revert();
+
+        (bool success, ) = msg.sender.call{value: smallWinnerRewardAmount}("");
+        if (!success) revert TransactionFailed();
+        payedSmall = true;
+    }
+
+    /// @notice Transfers all gathered funds left from the lottery to the big winner
+    /// @dev Pull over Push pattern
+    function claimBigReward() external override fromBlock(END_BLOCK_NUMBER) {
+        address winner = ownerOf(bigWinnerTicketId);
+
         if (msg.sender != winner) revert Unauthorized();
 
-        (bool success, ) = msg.sender.call{value: address(this).balance}("");
+        uint256 rewardAmount;
+        if (payedSmall) {
+            rewardAmount = address(this).balance;
+        } else if (!payedSmall)
+            rewardAmount = address(this).balance - smallWinnerRewardAmount;
+
+        (bool success, ) = msg.sender.call{value: rewardAmount}("");
         if (!success) revert TransactionFailed();
     }
 

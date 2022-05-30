@@ -21,9 +21,13 @@ interface ITicket {
 
     function pickWinner() external;
 
-    function saveWinner(uint256 _randomness) external;
+    function saveSmallWinner(uint256 _randomness) external;
 
-    function claimReward() external;
+    function saveBigWinner(uint256 _randomness) external;
+
+    function claimSmallReward() external;
+
+    function claimBigReward() external;
 
     function started() external view returns (bool);
 
