@@ -36,6 +36,8 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     bool pickedBig;
     bool payedSmall;
 
+    event WinnerChoosen(address indexed winner, uint256 indexed ticket);
+
     modifier fromBlock(uint64 blockNumber) {
         if (block.number < blockNumber) revert Unavailable();
         _;
@@ -166,6 +168,7 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
         uint256 winningTokenId = _randomness % id;
         smallWinnerTicketId = winningTokenId;
         smallWinnerRewardAmount = address(this).balance / 2;
+        emit WinnerChoosen(ownerOf(winningTokenId), winningTokenId);
     }
 
     /// @notice Selects the winning ticket and saves it as the lottery's big winner
@@ -179,6 +182,7 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     {
         uint256 winningTokenId = _randomness % id;
         bigWinnerTicketId = winningTokenId;
+        emit WinnerChoosen(ownerOf(winningTokenId), winningTokenId);
     }
 
     /// @notice Transfers all gathered funds from the lottery to winner
