@@ -30,15 +30,6 @@
 
 ---
 
-## Tests
-### Unit:
-- For each single contract
-### Integration:
-- Mocking the ChainLink Coordinator & LINK token contracts in order to simulate a real world enviroment
-### E2E:
-1. Simulating a real-world deployed lottery with 10 participants playing following the rules
-2. Simulating a real-world situation where hackers try to break the lottery
-
 ### Run & test
 - `git clone https://github.com/GeorgiGeorgiev7/NFT-lottery`
 - `yarn`
