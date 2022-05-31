@@ -19,7 +19,7 @@ error WinnerAlreadyChosen();
 /// @dev Used as an implementation to a proxy contract
 /// @dev Uses initializing function instead of constructor
 contract Ticket is ITicket, ERC721URIStorageUpgradeable {
-    WinnerPicker WINNER_PICKER;
+    WinnerPicker public WINNER_PICKER;
 
     uint64 public START_BLOCK_NUMBER;
     uint64 public END_BLOCK_NUMBER;
