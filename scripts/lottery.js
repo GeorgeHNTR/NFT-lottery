@@ -1,17 +1,44 @@
 const { ethers } = require("hardhat");
 
+let {
+    MAINNET__VRF_COORDINATOR, MAINNET__LINK_TOKEN, MAINNET__KEYHASH,
+    RINKEBY__VRF_COORDINATOR, RINKEBY__LINK_TOKEN, RINKEBY__KEYHASH,
+} = require('../test/utils/chainlink');
+
 async function main() {
-    const TicketImplementation = await (await ethers.getContractFactory('Ticket')).deploy();
-    console.log("The Ticket contract implementation has been deployed to:", TicketImplementation.address);
+    [deployer] = await ethers.getSigners();
 
-    const TicketBeacon = await (await ethers.getContractFactory('TicketBeacon')).deploy(TicketImplementation.address);
-    console.log("The Ticket Beacon has been deployed to:", TicketBeacon.address);
+    let chainlinkCredentials;
+    if (hre.network.name === 'mainnet' || hre.network.name === 'hardhat') {
+        chainlinkCredentials = [MAINNET__VRF_COORDINATOR, MAINNET__LINK_TOKEN, MAINNET__KEYHASH];
+    } else if (hre.network.name === 'rinkeby') {
+        chainlinkCredentials = [RINKEBY__VRF_COORDINATOR, RINKEBY__LINK_TOKEN, RINKEBY__KEYHASH];
+    } else {
+        throw new Error(" >>> Error occurred: Chain not supported. Please switch to hardhat, mainnet or rinkeby.");
+    };
 
-    const TicketFactory = await (await ethers.getContractFactory('TicketFactory')).deploy(TicketBeacon.address);
-    console.log("The Ticket Factory has been deployed to:", TicketFactory.address);
+    console.log('\n', Array(105).join('-'), '\n');
 
-    if ((await ethers.getSigner()).address !== await TicketBeacon.owner()) throw new Error(">>> Error occured: Setting owner to deployed beacon went wrong!");
-    console.log("The current admin/owner of the beacon contract is:", (await ethers.getSigner()).address);
+    const LotteryManager = await (await ethers.getContractFactory("LotteryManager")).deploy();
+    console.log("  >>> Lottery manager deployed to:                         ", LotteryManager.address);
+
+    const TicketImplementation = await (await ethers.getContractFactory("Ticket")).deploy();
+    console.log("  >>> Ticket contract implementation deployed to:          ", TicketImplementation.address);
+
+    const WinnerPicker = await (await ethers.getContractFactory("WinnerPicker")).deploy(...chainlinkCredentials);
+    console.log("  >>> VRF Consumer winner picker contract deployed to:     ", WinnerPicker.address);
+
+    console.log('\n', "   > Setting up the lottery..");
+    await LotteryManager.setupLottery(TicketImplementation.address, WinnerPicker.address);
+    console.log("    > Lottery set up!", '\n');
+
+    const TicketBeacon = await ethers.getContractAt("TicketBeacon", await LotteryManager.ticketBeacon());
+    console.log("  >>> Ticket beacon deployed to:                           ", TicketBeacon.address);
+
+    const TicketFactory = await ethers.getContractAt("TicketFactory", await LotteryManager.ticketFactory());
+    console.log("  >>> Ticket factory deployed to:                          ", TicketFactory.address);
+
+    console.log('\n', Array(105).join('-'), '\n');
 }
 
 main()
