@@ -4,7 +4,7 @@ const { ethers } = require("hardhat");
 let { NAME, SYMBOL, PRICE, getBlocks } = require("../utils/ticket");
 let { mineBlocks } = require("../utils/helpers.js");
 
-describe.only('Ticket', async function () {
+describe('Ticket', async function () {
     beforeEach(async function () {
         [deployer, player2, player3] = await ethers.getSigners();
         this.Ticket = await (await ethers.getContractFactory("Ticket")).deploy();
