@@ -4,9 +4,9 @@ const { ethers } = require("hardhat");
 let { RINKEBY__VRF_COORDINATOR, RINKEBY__LINK_TOKEN, RINKEBY__KEYHASH } = require('../utils/chainlink');
 let { NAME, SYMBOL, PRICE, getBlocks } = require("../utils/ticket");
 
-describe('OwnershipTransfers (LotteryManager-TicketFactory-TicketBeacon)', async function () {
+describe('BeaconProxiesImplementations (LotteryManager-TicketFactory-TicketBeacon-TicketProxy)', async function () {
     beforeEach(async function () {
-        [deployer, newOwner] = await ethers.getSigners();
+        [deployer] = await ethers.getSigners();
         this.LotteryManager = await (await ethers.getContractFactory("LotteryManager")).deploy();
 
         this.TicketImplementationAddress = (await (await ethers.getContractFactory("Ticket")).deploy()).address;
@@ -20,16 +20,20 @@ describe('OwnershipTransfers (LotteryManager-TicketFactory-TicketBeacon)', async
 
         this.BLOCKS = await getBlocks();
         this.PARAMS = [NAME, SYMBOL, this.BLOCKS.START_BLOCK, this.BLOCKS.END_BLOCK, PRICE];
+
+        await this.LotteryManager.deployTicketProxy(...this.PARAMS);
+        this.TicketProxy = await ethers.getContractAt("TicketProxy", await this.TicketFactory.latestTicketProxy());
     });
 
-    it("Both factory and beacon should be owned by the lottery manager", async function () {
-        expect(await this.TicketFactory.owner()).to.equal(this.LotteryManager.address);
-        expect(await this.TicketBeacon.owner()).to.equal(this.LotteryManager.address);
+    it("Proxies implementation should be fetched from the beacon", async function () {
+        expect(await this.TicketProxy.implementation()).to.equal(await this.TicketBeacon.implementation());
     });
 
-    it("Both factory and beacon should change owner once the lottery manager decides to", async function () {
-        await this.LotteryManager.transferLotteryOwnership(newOwner.address);
-        expect(await this.TicketFactory.owner()).to.equal(newOwner.address);
-        expect(await this.TicketBeacon.owner()).to.equal(newOwner.address);
+    it("Lottery manager should be able to change the proxies implementation", async function () {
+        const newImplementation = (await (await ethers.getContractFactory("Ticket")).deploy()).address;
+        this.LotteryManager.changeImplementation(newImplementation);
+        expect(await this.TicketProxy.implementation()).to.equal(newImplementation);
+        expect(await this.TicketBeacon.implementation()).to.equal(newImplementation);
     });
+
 });
