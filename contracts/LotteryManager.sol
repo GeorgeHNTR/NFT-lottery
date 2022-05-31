@@ -35,6 +35,7 @@ contract LotteryManager is Ownable {
 
     /// @notice Changes the address of the logic/implementation contract used in the lottery system
     /// @param newImplementation The address of the new implementation that is going to be used by the ticket proxies
+    /// @custom:advice In future add a timer (fe. of 2 weeks) before the actual change happens so users can get informed and ready
     function changeImplementation(address newImplementation)
         external
         onlyOwner
