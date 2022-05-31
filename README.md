@@ -1,4 +1,8 @@
 # NFT Lottery
+
+## Contracts Documentation
+- https://lottery-docgen.web.app
+
 ## Nexo Assignment
 - NFT Lottery project
 - Hardhat based
@@ -34,6 +38,3 @@
 - `git clone https://github.com/GeorgiGeorgiev7/NFT-lottery`
 - `yarn`
 - `npm run test` or `npx hardhat test`
-
-### Documentation
-https://lottery-docgen.web.app
