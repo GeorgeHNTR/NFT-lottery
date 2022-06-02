@@ -190,12 +190,16 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
     function claimSmallReward() external override fromBlock(END_BLOCK_NUMBER) {
         address winner = ownerOf(smallWinnerTicketId);
 
+        // checks
         if (msg.sender != winner) revert Unauthorized();
         if (payedSmall) revert();
 
+        // effects
+        payedSmall = true;
+
+        // interaction
         (bool success, ) = msg.sender.call{value: smallWinnerRewardAmount}("");
         if (!success) revert TransactionFailed();
-        payedSmall = true;
     }
 
     /// @notice Transfers all gathered funds left from the lottery to the big winner
