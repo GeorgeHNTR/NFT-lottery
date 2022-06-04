@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "../interfaces/ITicket.sol";
 import "../WinnerPicker.sol";
@@ -18,7 +19,7 @@ error WinnerAlreadyChosen();
 /// @notice Allows minting tickets for a certain period of time then chooses a winner
 /// @dev Used as an implementation to a proxy contract
 /// @dev Uses initializing function instead of constructor
-contract Ticket is ITicket, ERC721URIStorageUpgradeable {
+contract Ticket is ITicket, ERC721URIStorageUpgradeable, ReentrancyGuard {
     WinnerPicker public WINNER_PICKER;
 
     uint64 public START_BLOCK_NUMBER;
@@ -187,7 +188,12 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
 
     /// @notice Transfers all gathered funds from the lottery to winner
     /// @dev Pull over Push pattern
-    function claimSmallReward() external override fromBlock(END_BLOCK_NUMBER) {
+    function claimSmallReward()
+        external
+        override
+        nonReentrant
+        fromBlock(END_BLOCK_NUMBER)
+    {
         address winner = ownerOf(smallWinnerTicketId);
 
         // checks
@@ -204,7 +210,12 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable {
 
     /// @notice Transfers all gathered funds left from the lottery to the big winner
     /// @dev Pull over Push pattern
-    function claimBigReward() external override fromBlock(END_BLOCK_NUMBER) {
+    function claimBigReward()
+        external
+        override
+        nonReentrant
+        fromBlock(END_BLOCK_NUMBER)
+    {
         address winner = ownerOf(bigWinnerTicketId);
 
         if (msg.sender != winner) revert Unauthorized();
