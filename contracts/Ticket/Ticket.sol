@@ -33,9 +33,9 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable, ReentrancyGuard {
     uint256 public smallWinnerTicketId;
     uint256 public smallWinnerRewardAmount;
 
-    bool pickedSmall;
-    bool pickedBig;
-    bool payedSmall;
+    bool public pickedSmall;
+    bool public pickedBig;
+    bool public payedSmall;
 
     event WinnerChoosen(address indexed winner, uint256 indexed ticket);
 
