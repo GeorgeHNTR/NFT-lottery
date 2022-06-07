@@ -2,16 +2,27 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 let { NAME, SYMBOL, PRICE, getBlocks } = require("../utils/ticket");
-let { mineBlocks } = require("../utils/helpers.js");
+let { mineBlocks } = require("../utils/helpers");
+const { deployMockedLink, deployMockedWinnerPicker } = require("../utils/mock");
 
 describe('Ticket', async function () {
     beforeEach(async function () {
         [deployer, player2, player3] = await ethers.getSigners();
         this.Ticket = await (await ethers.getContractFactory("Ticket")).deploy();
 
+        this.LINK_TOKEN_MOCK = await deployMockedLink();
+
+        this.WINNER_PICKER_MOCK = await deployMockedWinnerPicker();
+
+        await Promise.all([
+            this.WINNER_PICKER_MOCK.mock.LINK_TOKEN.returns(this.LINK_TOKEN_MOCK.address),
+            this.WINNER_PICKER_MOCK.mock.fee.returns(ethers.utils.parseEther("0.25")),
+            this.WINNER_PICKER_MOCK.mock.getRandomNumber.returns("0x" + Array(65).join('0')),
+            this.LINK_TOKEN_MOCK.mock.transferFrom.withArgs(deployer.address, this.WINNER_PICKER_MOCK.address, ethers.utils.parseEther("0.25")).returns(true)
+        ]);
+
         this.BLOCKS = await getBlocks();
-        this.WINNER_PICKER = "0x10c1288cc3d8bfb060e5b01de314b5c85802cb6e"; // random address
-        this.PARAMS = [NAME, SYMBOL, this.BLOCKS.START_BLOCK, this.BLOCKS.END_BLOCK, PRICE, this.WINNER_PICKER];
+        this.PARAMS = [NAME, SYMBOL, this.BLOCKS.START_BLOCK, this.BLOCKS.END_BLOCK, PRICE, this.WINNER_PICKER_MOCK.address];
     });
 
     describe("Upon initialization", async function () {
@@ -41,7 +52,7 @@ describe('Ticket', async function () {
             });
 
             it('should set correct winner picker / vrf consumer', async function () {
-                expect((await this.Ticket.WINNER_PICKER()).toLowerCase()).to.equal(this.WINNER_PICKER);
+                expect(await this.Ticket.WINNER_PICKER()).to.equal(this.WINNER_PICKER_MOCK.address);
             });
         });
 
@@ -147,47 +158,111 @@ describe('Ticket', async function () {
     });
 
     describe("Picking winner", async function () {
-        describe("The small winner", async function () {
-            beforeEach(async function () {
-                await this.Ticket.initialize(...this.PARAMS);
-                this.blocksUntilMidtimeBlockNumber = this.BLOCKS.START_BLOCK - this.BLOCKS.CURRENT_BLOCK + (this.BLOCKS.END_BLOCK - this.BLOCKS.START_BLOCK) / 2 - 2;
-            });
+        beforeEach(async function () {
+            await this.Ticket.initialize(...this.PARAMS);
+            this.blocksUntilMidtimeBlockNumber = this.BLOCKS.START_BLOCK - this.BLOCKS.CURRENT_BLOCK + (this.BLOCKS.END_BLOCK - this.BLOCKS.START_BLOCK) / 2 - 2;
+        });
 
-            it("should not be able to pick a winner before midtime", async function () {
+        describe("Block validations", async function () {
+            it("should not be able to pick the small winner before midtime", async function () {
                 await mineBlocks(this.blocksUntilMidtimeBlockNumber - 1);
                 await expect(this.Ticket.pickWinner()).to.be.revertedWith("Unavailable()");
             });
 
-            it("should be able to pick a winner before end", async function () {
+            it("should be able to pick the small winner before end", async function () {
                 await mineBlocks(this.blocksUntilMidtimeBlockNumber);
                 await expect(this.Ticket.pickWinner()).to.not.be.revertedWith("Unavailable()");
             });
-        });
 
-        describe("The big winner", async function () {
-            beforeEach(async function () {
-                await this.Ticket.initialize(...this.PARAMS);
-            });
-
-            it("should be able to pick a winner after end", async function () {
+            it("should be able to pick the big winner after end", async function () {
                 await mineBlocks(this.BLOCKS.END_BLOCK - this.BLOCKS.CURRENT_BLOCK);
                 await expect(this.Ticket.pickWinner()).to.not.be.revertedWith("Unavailable()");
             });
         });
 
-        it("should send LINK tokens to the vrf consumer contract", async function () {
-            await mineBlocks(this.blocksUntilMidtimeBlockNumber);
-            // on hre we expect an error
-            await expect(this.Ticket.pickWinner()).to.be.revertedWith("Transaction reverted: function call to a non-contract account");
+        describe("VRFConsumer/WinnerPicker contract interaction", async function () {
+            it("should transfer LINK tokens from the msg.sender balance to the VRFConsumer contract", async function () {
+                await mineBlocks(this.blocksUntilMidtimeBlockNumber);
+
+                await expect(this.Ticket.pickWinner()).to.not.be.revertedWith("TransactionFailed()");
+            });
+
+            it("should request a random number", async function () {
+                // Think of a better way to check this one
+                const signatureSmall = "saveSmallWinner(uint256)";
+                const signatureBig = "saveBigWinner(uint256)";
+                await this.WINNER_PICKER_MOCK.mock.getRandomNumber.withArgs(signatureSmall).revertsWithReason(signatureSmall);
+                await this.WINNER_PICKER_MOCK.mock.getRandomNumber.withArgs(signatureBig).revertsWithReason(signatureBig);
+
+
+                await mineBlocks(this.blocksUntilMidtimeBlockNumber);
+                await expect(this.Ticket.pickWinner()).to.be.revertedWith(signatureSmall);
+
+                await mineBlocks(this.blocksUntilMidtimeBlockNumber);
+                await expect(this.Ticket.pickWinner()).to.be.revertedWith(signatureBig);
+            });
+
+            it("should save boolean that we have picked a winner", async function () {
+                await mineBlocks(this.blocksUntilMidtimeBlockNumber);
+                await this.Ticket.pickWinner();
+                expect(await this.Ticket.pickedSmall()).to.be.true;
+
+                await mineBlocks(this.blocksUntilMidtimeBlockNumber);
+                await this.Ticket.pickWinner();
+                expect(await this.Ticket.pickedBig()).to.be.true;
+            });
+        });
+    });
+
+    describe("Choosing winners", async function () {
+        beforeEach(async function () {
+            this.PARAMS[5] = deployer.address;
+            await this.Ticket.initialize(...this.PARAMS);
+            await mineBlocks(this.BLOCKS.START_BLOCK - this.BLOCKS.CURRENT_BLOCK);
+            await this.Ticket.buyTicket({ value: PRICE }); // so we can choose a winner
+            await this.Ticket.buyTicket({ value: PRICE }); // so we can choose a winner
+            this.randomness = 3;
+        });
+
+        describe("Saving small winner", async function () {
+            it("should save winning ticket id", async function () {
+                await this.Ticket.saveSmallWinner(this.randomness);
+                expect(await this.Ticket.smallWinnerTicketId()).to.equal(1); // 3 % 2 = 1
+            });
+
+            it("should save reward amount equal to half of current balance", async function () {
+                await this.Ticket.saveSmallWinner(this.randomness);
+                expect(await this.Ticket.smallWinnerRewardAmount()).to.equal(0.5 * Number(await ethers.provider.getBalance(this.Ticket.address)));
+            });
+
+            it("should emit an event", async function () {
+                await expect(this.Ticket.saveSmallWinner(this.randomness)).to.emit(this.Ticket, "WinnerChoosen").withArgs(deployer.address, 1);
+            });
+        });
+
+        describe("Saving big winner", async function () {
+            beforeEach(async function () {
+                await mineBlocks(this.BLOCKS.END_BLOCK - this.BLOCKS.START_BLOCK + 1000);
+            });
+
+            it("should save winning ticket id", async function () {
+                await this.Ticket.saveBigWinner(this.randomness);
+                expect(await this.Ticket.bigWinnerTicketId()).to.equal(1); // 3 % 2 = 1
+            });
+
+            it("should emit an event", async function () {
+                await this.Ticket.saveBigWinner(this.randomness);
+                await expect(this.Ticket.saveBigWinner(this.randomness)).to.emit(this.Ticket, "WinnerChoosen").withArgs(deployer.address, 1);
+            });
         });
     });
 
     describe("Getters", async function () {
-        describe("Finished status checker", async function () {
-            beforeEach(async function () {
-                await this.Ticket.initialize(...this.PARAMS);
-            });
+        beforeEach(async function () {
+            await this.Ticket.initialize(...this.PARAMS);
+        });
 
+        describe("Finished status checker", async function () {
             it("should return false if not finished yet", async function () {
                 expect(await this.Ticket.finished()).to.be.false;
             });
@@ -199,10 +274,6 @@ describe('Ticket', async function () {
         });
 
         describe("Started status checker", async function () {
-            beforeEach(async function () {
-                await this.Ticket.initialize(...this.PARAMS);
-            });
-
             it("should return false if not started yet", async function () {
                 expect(await this.Ticket.started()).to.be.false;
             });
