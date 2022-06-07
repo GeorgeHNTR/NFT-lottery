@@ -30,7 +30,7 @@
 ---
 **NOTE: OWNERSHIP**
 
-**TicketBeacon**, **TicketFactory** and **WinnerPicker** contracts share the same owner
+**TicketBeacon** and **TicketFactory** contracts share the same owner
 
 ---
 
