@@ -50,7 +50,7 @@ contract Ticket is ITicket, ERC721URIStorageUpgradeable, ReentrancyGuard {
     }
 
     modifier onlyWinnerPicker() {
-        if (msg.sender == address(WINNER_PICKER)) revert Unauthorized();
+        if (msg.sender != address(WINNER_PICKER)) revert Unauthorized();
         _;
     }
 
